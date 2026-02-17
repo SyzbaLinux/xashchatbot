@@ -24,16 +24,16 @@ class ProcessWhatsAppMessage implements ShouldQueue
 
     public function handle(ChatbotService $chatbot): void
     {
-        // Mark as read (non-blocking — failure here doesn't matter)
-        $this->markAsRead();
-
-        // Route to chatbot
+        // Reply to user first
         $chatbot->handle($this->phoneNumber, $this->messageText);
 
         // OTP fallback
         if (preg_match('/\b(\d{6})\b/', $this->messageText, $matches)) {
             $this->processOtp($matches[1]);
         }
+
+        // Mark as read last — failure here doesn't affect the user
+        $this->markAsRead();
     }
 
     private function markAsRead(): void
