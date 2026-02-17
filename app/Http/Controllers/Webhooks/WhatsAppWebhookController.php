@@ -62,8 +62,8 @@ class WhatsAppWebhookController extends Controller
             };
 
             if ($input !== null) {
-                // Dispatch to queue — webhook returns 200 without waiting
-                ProcessWhatsAppMessage::dispatch($phone, $messageId, $input);
+                // Send 200 to WhatsApp first, process message after response is sent
+                ProcessWhatsAppMessage::dispatchAfterResponse($phone, $messageId, $input);
             }
 
         } catch (\Throwable $e) {
