@@ -18,10 +18,19 @@ class ChatbotService
     // Entry point
     // -------------------------------------------------------------------------
 
+    private const GREETINGS = ['hi', 'hie', 'hello', 'hey', 'start', 'menu', 'home'];
+
     public function handle(string $phone, string $input): void
     {
+        $input   = trim($input);
         $session = ChatSession::getOrCreate($phone);
-        $reply   = $this->route($session, trim($input));
+
+        // Any greeting resets the session and shows the main menu fresh
+        if (in_array(strtolower($input), self::GREETINGS)) {
+            $session->reset();
+        }
+
+        $reply = $this->route($session, $input);
 
         if ($reply !== null) {
             $this->sendText($phone, $reply);
