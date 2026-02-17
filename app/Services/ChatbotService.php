@@ -376,6 +376,8 @@ class ChatbotService
     {
         try {
             $response = Http::withToken(config('whatsapp.graph_api_token'))
+                ->connectTimeout(5)   // fail fast if can't reach Facebook
+                ->timeout(10)         // max 10s to get a response
                 ->post(
                     'https://graph.facebook.com/v24.0/' . config('whatsapp.phone_number_id') . '/messages',
                     array_merge(['messaging_product' => 'whatsapp', 'to' => $phone], $body)

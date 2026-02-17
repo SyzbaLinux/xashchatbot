@@ -40,6 +40,7 @@ class ProcessWhatsAppMessage implements ShouldQueue
     {
         try {
             Http::withToken(env('GRAPH_API_TOKEN'))
+                ->connectTimeout(3)
                 ->timeout(5)
                 ->post('https://graph.facebook.com/v24.0/' . env('BUSINESS_PHONE_NUMBER_ID') . '/messages', [
                     'messaging_product' => 'whatsapp',
