@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 
 class ChatbotService
 {
+    private const MENU_IMAGE_URL = 'https://img.freepik.com/premium-photo/beautiful-senior-woman-using-mobile-phone-park_216356-1859.jpg';
+
     public function __construct(private VoucherService $voucherService) {}
 
     // -------------------------------------------------------------------------
@@ -89,7 +91,7 @@ class ChatbotService
             . "━━━━━━━━━━━━━━━━\n"
             . "_Reply with the number of your choice._";
 
-        $this->sendText($session->phone_number, $caption);
+        $this->sendImage($session->phone_number, self::MENU_IMAGE_URL, $caption);
         return null;
     }
 
@@ -327,6 +329,17 @@ class ChatbotService
         $this->post($phone, [
             'type' => 'text',
             'text' => ['body' => $message],
+        ]);
+    }
+
+    private function sendImage(string $phone, string $url, string $caption): void
+    {
+        $this->post($phone, [
+            'type'  => 'image',
+            'image' => [
+                'link'    => $url,
+                'caption' => $caption,
+            ],
         ]);
     }
 
