@@ -258,7 +258,7 @@ class OTPService
             $message .= "If you didn't request this code, please ignore this message.";
 
             $response = Http::withToken(env('GRAPH_API_TOKEN'))
-                ->post('https://graph.facebook.com/v22.0/' . env('BUSINESS_PHONE_NUMBER_ID') . '/messages', [
+                ->post('https://graph.facebook.com/v24.0/' . env('BUSINESS_PHONE_NUMBER_ID') . '/messages', [
                     'messaging_product' => 'whatsapp',
                     'to' => $phoneNumber,
                     'type' => 'text',

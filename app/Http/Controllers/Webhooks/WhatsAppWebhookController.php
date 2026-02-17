@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Webhooks;
 
 use App\Http\Controllers\Controller;
 use App\Models\Otp;
+use App\Services\ChatbotService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
@@ -147,21 +149,22 @@ class WhatsAppWebhookController extends Controller
                 'type' => $type,
             ]);
 
+            // Mark message as read
+            $this->markMessageAsRead($messageId);
+
             // Only process text messages
             if ($type === 'text') {
                 $messageText = $message['text']['body'];
 
-                // Extract OTP code (6 digits)
-                if (preg_match('/\b(\d{6})\b/', $messageText, $matches)) {
-                    $otpCode = $matches[1];
+                // Route to chatbot first
+                $chatbot = app(ChatbotService::class);
+                $chatbot->handle($phoneNumber, $messageText);
 
-                    // Try to verify the OTP
-                    $this->processOTPFromMessage($phoneNumber, $otpCode);
+                // OTP fallback: if the message looks like a 6-digit OTP, also try to verify it
+                if (preg_match('/\b(\d{6})\b/', $messageText, $matches)) {
+                    $this->processOTPFromMessage($phoneNumber, $matches[1]);
                 }
             }
-
-            // Mark message as read (optional)
-            $this->markMessageAsRead($messageId);
 
             return response('OK', 200);
 
@@ -207,8 +210,8 @@ class WhatsAppWebhookController extends Controller
     private function markMessageAsRead(string $messageId)
     {
         try {
-            $response = \Illuminate\Support\Facades\Http::withToken(env('GRAPH_API_TOKEN'))
-                ->post('https://graph.facebook.com/v22.0/' . env('BUSINESS_PHONE_NUMBER_ID') . '/messages', [
+            $response = Http::withToken(env('GRAPH_API_TOKEN'))
+                ->post('https://graph.facebook.com/v24.0/' . env('BUSINESS_PHONE_NUMBER_ID') . '/messages', [
                     'messaging_product' => 'whatsapp',
                     'status' => 'read',
                     'message_id' => $messageId,
@@ -230,32 +233,40 @@ class WhatsAppWebhookController extends Controller
     }
 
     /**
-     * Send confirmation message
+     * Send a WhatsApp text message.
      */
-    private function sendConfirmationMessage(string $phoneNumber, string $message)
+    private function sendMessage(string $phoneNumber, string $message): void
     {
         try {
-            $response = \Illuminate\Support\Facades\Http::withToken(env('GRAPH_API_TOKEN'))
-                ->post('https://graph.facebook.com/v22.0/' . env('BUSINESS_PHONE_NUMBER_ID') . '/messages', [
+            $response = Http::withToken(env('GRAPH_API_TOKEN'))
+                ->post('https://graph.facebook.com/v24.0/' . env('BUSINESS_PHONE_NUMBER_ID') . '/messages', [
                     'messaging_product' => 'whatsapp',
-                    'to' => $phoneNumber,
-                    'type' => 'text',
-                    'text' => [
-                        'body' => $message,
-                    ],
+                    'to'                => $phoneNumber,
+                    'type'              => 'text',
+                    'text'              => ['body' => $message],
                 ]);
 
             if ($response->successful()) {
-                Log::info('Confirmation message sent', [
+                Log::info('WhatsApp message sent', ['phone_number' => $phoneNumber]);
+            } else {
+                Log::warning('Failed to send WhatsApp message', [
                     'phone_number' => $phoneNumber,
+                    'status'       => $response->status(),
                 ]);
             }
-
         } catch (\Exception $e) {
-            Log::error('Error sending confirmation message', [
+            Log::error('Error sending WhatsApp message', [
                 'phone_number' => $phoneNumber,
-                'error' => $e->getMessage(),
+                'error'        => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Send confirmation message (kept for OTP compatibility).
+     */
+    private function sendConfirmationMessage(string $phoneNumber, string $message): void
+    {
+        $this->sendMessage($phoneNumber, $message);
     }
 }
