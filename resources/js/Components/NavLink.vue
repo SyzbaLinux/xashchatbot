@@ -3,8 +3,6 @@
   <a
     v-if="isExternal"
     :href="href"
-    target="_blank"
-    rel="noopener noreferrer"
     :class="linkClass"
   >
     <i :class="`fas ${icon} w-5`"></i>
