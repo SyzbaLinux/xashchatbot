@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class ChatbotService
 {
-    private const MENU_IMAGE_URL = 'https://xashchatbot.emmanuelsiziba.co.zw/xashwelcome.avif';
+    private const MENU_IMAGE_URL = 'https://xashchatbot.emmanuelsiziba.co.zw/xashwelcome.jpg';
 
     public function __construct(private VoucherService $voucherService) {}
 
