@@ -19,12 +19,20 @@ class PaymentMethodSeeder extends Seeder
                 'sort_order'  => 1,
             ],
             [
+                'code'        => 'express',
+                'name'        => 'Instant EFT / Credit Card',
+                'description' => 'Pay via instant EFT or credit card',
+                'countries'   => ['ZA', 'ZW', 'BW'],
+                'is_enabled'  => true,
+                'sort_order'  => 2,
+            ],
+            [
                 'code'        => 'ecocash',
                 'name'        => 'EcoCash',
                 'description' => 'Pay using your EcoCash mobile money wallet',
                 'countries'   => ['ZW'],
                 'is_enabled'  => false,
-                'sort_order'  => 2,
+                'sort_order'  => 3,
             ],
             [
                 'code'        => 'onemoney',
@@ -32,7 +40,7 @@ class PaymentMethodSeeder extends Seeder
                 'description' => 'Pay using your OneMoney mobile money wallet',
                 'countries'   => ['ZW'],
                 'is_enabled'  => false,
-                'sort_order'  => 3,
+                'sort_order'  => 4,
             ],
             [
                 'code'        => 'innbucks',
@@ -40,7 +48,7 @@ class PaymentMethodSeeder extends Seeder
                 'description' => 'Pay using your InnBucks wallet',
                 'countries'   => ['ZW'],
                 'is_enabled'  => false,
-                'sort_order'  => 4,
+                'sort_order'  => 5,
             ],
             [
                 'code'        => 'mpesa',
@@ -48,7 +56,7 @@ class PaymentMethodSeeder extends Seeder
                 'description' => 'Pay using M-Pesa mobile money',
                 'countries'   => ['ZA', 'BW'],
                 'is_enabled'  => false,
-                'sort_order'  => 5,
+                'sort_order'  => 6,
             ],
             [
                 'code'        => 'orangemoney',
@@ -56,7 +64,7 @@ class PaymentMethodSeeder extends Seeder
                 'description' => 'Pay using Orange Money mobile wallet',
                 'countries'   => ['BW'],
                 'is_enabled'  => false,
-                'sort_order'  => 6,
+                'sort_order'  => 7,
             ],
         ];
 

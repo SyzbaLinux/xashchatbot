@@ -52,13 +52,28 @@
           <p class="px-2 pb-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             Chatbot
           </p>
-          <NavLink href="#" icon="fa-exchange-alt" class="text-sm">
+          <NavLink
+            :href="route('admin.transactions')"
+            :active="route().current('admin.transactions')"
+            icon="fa-exchange-alt"
+            class="text-sm"
+          >
             Transactions
           </NavLink>
-          <NavLink href="#" icon="fa-credit-card" class="text-sm">
+          <NavLink
+            :href="route('admin.payment-methods')"
+            :active="route().current('admin.payment-methods')"
+            icon="fa-credit-card"
+            class="text-sm"
+          >
             Payment Methods
           </NavLink>
-          <NavLink href="#" icon="fa-comments" class="text-sm">
+          <NavLink
+            :href="route('admin.chat-sessions')"
+            :active="route().current('admin.chat-sessions')"
+            icon="fa-comments"
+            class="text-sm"
+          >
             Chat Sessions
           </NavLink>
         </div>
@@ -68,27 +83,13 @@
           <p class="px-2 pb-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             Administration
           </p>
-          <NavLink href="#" icon="fa-users" class="text-sm">
+          <NavLink
+            :href="route('admin.users')"
+            :active="route().current('admin.users')"
+            icon="fa-users"
+            class="text-sm"
+          >
             Users
-          </NavLink>
-          <NavLink href="#" icon="fa-sliders-h" class="text-sm">
-            Settings
-          </NavLink>
-          <NavLink href="#" icon="fa-cogs" class="text-sm">
-            System Config
-          </NavLink>
-        </div>
-
-        <!-- Analytics -->
-        <div class="pt-3">
-          <p class="px-2 pb-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-            Analytics
-          </p>
-          <NavLink href="#" icon="fa-chart-bar" class="text-sm">
-            Reports
-          </NavLink>
-          <NavLink href="#" icon="fa-file-pdf" class="text-sm">
-            Export Reports
           </NavLink>
         </div>
       </nav>
