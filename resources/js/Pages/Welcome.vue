@@ -31,23 +31,38 @@ const getDashboardRoute = (role: string) => {
             <!-- Main content -->
             <div class="relative z-10 w-full max-w-4xl">
                 <main class="flex flex-col items-center justify-center space-y-8 text-center">
-                    <!-- Logo with subtle animation -->
+                    <!-- Logo -->
                     <div class="animate-fade-in-up">
-                        <img
-                            src="/zblogo.png"
-                            alt="Cash Position & Requisition Management"
-                            class="mb-6 h-16 drop-shadow-lg transition-transform duration-300 hover:scale-105 lg:h-20"
-                        />
+                        <div class="w-20 h-20 xash-gradient rounded-2xl flex items-center justify-center shadow-xl mx-auto mb-2">
+                            <i class="fas fa-comments-dollar text-white text-4xl"></i>
+                        </div>
+                        <p class="text-sm font-semibold text-green-600 dark:text-green-400 tracking-widest uppercase mt-3">XASH</p>
                     </div>
 
                     <!-- Heading with gradient text -->
                     <div class="animate-fade-in-up animation-delay-200 space-y-4">
-                        <h1 class="bg-gradient-to-r  from-slate-900 via-emerald-700 to-green-900 bg-clip-text text-4xl font-bold text-transparent dark:from-slate-100 dark:via-emerald-300 dark:to-green-300 lg:text-6xl">
-                            Queue Management Simplified
+                        <h1 class="bg-gradient-to-r from-slate-900 via-green-700 to-emerald-900 bg-clip-text text-4xl font-bold text-transparent dark:from-slate-100 dark:via-green-300 dark:to-emerald-300 lg:text-6xl">
+                            Mobile Payments via WhatsApp
                         </h1>
                         <p class="mx-auto max-w-2xl text-lg text-slate-600 dark:text-slate-400 lg:text-xl">
-                            Real-time branch queue handling with ticket printing and audio announcements for a seamless banking experience.
+                            Buy airtime, data bundles and pay utility bills instantly — just send a WhatsApp message. Fast, secure and available 24/7.
                         </p>
+                    </div>
+
+                    <!-- Feature chips -->
+                    <div class="animate-fade-in-up animation-delay-400 flex flex-wrap justify-center gap-3 mt-2">
+                        <span class="inline-flex items-center gap-1.5 px-4 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
+                            <i class="fas fa-mobile-alt text-xs"></i> Buy Airtime
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-4 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
+                            <i class="fas fa-wifi text-xs"></i> Data Bundles
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-4 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
+                            <i class="fas fa-file-invoice-dollar text-xs"></i> Pay Bills
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-4 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
+                            <i class="fas fa-ticket-alt text-xs"></i> Vouchers
+                        </span>
                     </div>
 
                     <!-- CTA Buttons -->

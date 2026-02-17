@@ -1,12 +1,13 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-slate-950">
-    <!-- Sidebar -->
+    <!-- Mobile overlay -->
     <div
       v-if="sidebarOpen"
       class="fixed inset-0 z-40 bg-black/50 lg:hidden"
       @click="sidebarOpen = false"
     ></div>
 
+    <!-- Sidebar -->
     <aside
       :class="[
         'fixed left-0 top-0 h-full z-50 w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700',
@@ -15,26 +16,28 @@
       ]"
     >
       <!-- Logo -->
-      <div class="h-16 flex items-center justify-between px-6 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
-        <Link :href="route('welcome')" class="flex items-center gap-2 group">
-          <div class="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center shadow-lg">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
+      <div class="h-16 flex items-center justify-between px-5 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
+        <Link :href="route('welcome')" class="flex items-center gap-2.5 group">
+          <div class="w-8 h-8 xash-gradient rounded-lg flex items-center justify-center shadow-md">
+            <i class="fas fa-shield-alt text-white text-sm"></i>
           </div>
-          <span class="text-lg font-bold text-gray-900 dark:text-white">ErrandRunner</span>
+          <div class="leading-tight">
+            <span class="text-lg font-bold text-gray-900 dark:text-white tracking-tight">XASH</span>
+            <span class="ml-1.5 text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded">Admin</span>
+          </div>
         </Link>
         <button
           @click="sidebarOpen = false"
-          class="lg:hidden p-1 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+          class="lg:hidden p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800"
         >
-          <i class="fas fa-times text-lg"></i>
+          <i class="fas fa-times"></i>
         </button>
       </div>
 
       <!-- Navigation -->
-      <nav class="overflow-y-auto px-3 py-4 space-y-1 flex-1">
-        <!-- Dashboard Link -->
+      <nav class="overflow-y-auto px-3 py-4 space-y-0.5 flex-1">
+
+        <!-- Dashboard -->
         <NavLink
           :href="route('admin.dashboard')"
           :active="route().current('admin.dashboard')"
@@ -44,54 +47,47 @@
           Dashboard
         </NavLink>
 
-        <!-- Admin Navigation Section -->
-        <div class="pt-2">
-          <p class="px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Administration</p>
-          <NavLink
-            href="#"
-            icon="fa-users"
-            class="mt-1 text-sm"
-          >
-            Users Management
+        <!-- Chatbot Management -->
+        <div class="pt-3">
+          <p class="px-2 pb-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            Chatbot
+          </p>
+          <NavLink href="#" icon="fa-exchange-alt" class="text-sm">
+            Transactions
           </NavLink>
-          <NavLink
-            href="#"
-            icon="fa-sliders-h"
-            class="text-sm"
-          >
-            Settings
+          <NavLink href="#" icon="fa-credit-card" class="text-sm">
+            Payment Methods
           </NavLink>
-          <NavLink
-            href="#"
-            icon="fa-chart-bar"
-            class="text-sm"
-          >
-            Reports
-          </NavLink>
-          <NavLink
-            href="#"
-            icon="fa-cogs"
-            class="text-sm"
-          >
-            System Configuration
+          <NavLink href="#" icon="fa-comments" class="text-sm">
+            Chat Sessions
           </NavLink>
         </div>
 
-        <!-- Analytics Section -->
-        <div class="pt-2">
-          <p class="px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Analytics</p>
-          <NavLink
-            href="#"
-            icon="fa-graph"
-            class="mt-1 text-sm"
-          >
-            Statistics
+        <!-- Administration -->
+        <div class="pt-3">
+          <p class="px-2 pb-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            Administration
+          </p>
+          <NavLink href="#" icon="fa-users" class="text-sm">
+            Users
           </NavLink>
-          <NavLink
-            href="#"
-            icon="fa-file-pdf"
-            class="text-sm"
-          >
+          <NavLink href="#" icon="fa-sliders-h" class="text-sm">
+            Settings
+          </NavLink>
+          <NavLink href="#" icon="fa-cogs" class="text-sm">
+            System Config
+          </NavLink>
+        </div>
+
+        <!-- Analytics -->
+        <div class="pt-3">
+          <p class="px-2 pb-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            Analytics
+          </p>
+          <NavLink href="#" icon="fa-chart-bar" class="text-sm">
+            Reports
+          </NavLink>
+          <NavLink href="#" icon="fa-file-pdf" class="text-sm">
             Export Reports
           </NavLink>
         </div>
@@ -104,35 +100,36 @@
           class="w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
         >
           <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-xs font-semibold">
+            <div class="w-7 h-7 rounded-full xash-gradient flex items-center justify-center text-white text-xs font-bold">
               {{ user.name.charAt(0).toUpperCase() }}
             </div>
             <div class="text-left min-w-0">
               <p class="text-xs font-medium text-gray-900 dark:text-white truncate">{{ user.name }}</p>
-              <p class="text-xs text-gray-600 dark:text-gray-400 capitalize truncate">{{ user.role }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 capitalize truncate">{{ user.role }}</p>
             </div>
           </div>
-          <i :class="`fas fa-chevron-down transition-transform text-xs ${userMenuOpen ? 'rotate-180' : ''}`"></i>
+          <i :class="`fas fa-chevron-down text-xs text-gray-400 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`"></i>
         </button>
 
-        <!-- User Dropdown Menu (Drop Up) -->
-        <div v-if="userMenuOpen" class="absolute bottom-full mb-2 left-0 right-0 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-10 mx-1">
-          <div class="space-y-1 p-1">
+        <!-- Drop-up menu -->
+        <div
+          v-if="userMenuOpen"
+          class="absolute bottom-full mb-2 left-1 right-1 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-10"
+        >
+          <div class="space-y-0.5 p-1">
             <Link
               :href="route('user.profile.edit')"
               @click="userMenuOpen = false"
-              class="block w-full text-left px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition-colors"
+              class="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-300 rounded-md transition-colors"
             >
-              <i class="fas fa-user-circle mr-1.5"></i>
-              Profile
+              <i class="fas fa-user-circle w-3.5"></i>Profile
             </Link>
             <form @submit.prevent="logout" class="w-full">
               <button
                 type="submit"
-                class="w-full text-left px-2 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors flex items-center gap-1.5"
+                class="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
               >
-                <i class="fas fa-sign-out-alt"></i>
-                Sign Out
+                <i class="fas fa-sign-out-alt w-3.5"></i>Sign Out
               </button>
             </form>
           </div>
@@ -142,42 +139,41 @@
 
     <!-- Main Content -->
     <div class="lg:ml-64">
-      <!-- Top Navigation -->
+      <!-- Top bar -->
       <header class="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-6 sticky top-0 z-40">
         <button
           @click="sidebarOpen = !sidebarOpen"
-          class="lg:hidden p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+          class="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800"
         >
-          <i class="fas fa-bars text-xl"></i>
+          <i class="fas fa-bars text-lg"></i>
         </button>
 
         <div class="flex-1"></div>
 
-        <!-- Top Right Actions -->
-        <div class="flex items-center gap-4">
-          <!-- Admin Badge -->
-          <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold rounded-full flex items-center gap-1">
-            <i class="fas fa-shield-alt"></i>
-            Admin
+        <div class="flex items-center gap-3">
+          <!-- Admin badge -->
+          <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full flex items-center gap-1.5">
+            <i class="fas fa-shield-alt text-xs"></i>Admin
           </span>
 
           <!-- Notifications -->
-          <button class="p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors relative">
+          <button class="relative p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
             <i class="fas fa-bell text-lg"></i>
-            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
 
-          <!-- Theme Toggle -->
+          <!-- Theme toggle -->
           <button
             @click="toggleTheme"
-            class="p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            class="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
           >
             <i :class="`fas ${isDark ? 'fa-sun' : 'fa-moon'}`"></i>
           </button>
         </div>
       </header>
 
-      <!-- Page Content -->
+      <!-- Page content -->
       <main class="p-6">
         <slot />
       </main>
@@ -186,20 +182,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import NavLink from '@/Components/NavLink.vue';
 
-const sidebarOpen = ref(false);
+const sidebarOpen  = ref(false);
 const userMenuOpen = ref(false);
-const isDark = ref(false);
-const page = usePage();
+const isDark       = ref(false);
+const page         = usePage();
 
 const user = computed(() => page.props.auth.user);
 
+onMounted(() => {
+  isDark.value = document.documentElement.classList.contains('dark');
+});
+
 const toggleTheme = () => {
   isDark.value = !isDark.value;
-  // In a real app, you'd save this preference and apply it to the document
+  document.documentElement.classList.toggle('dark', isDark.value);
+  localStorage.setItem('theme', isDark.value ? 'dark' : 'light');
 };
 
 const logout = () => {

@@ -11,13 +11,12 @@
       <!-- Logo/Brand section -->
       <div class="text-center mb-8">
         <div class="flex justify-center mb-4">
-          <div class="w-12 h-12 bg-gradient-to-br from-emerald-600 to-green-600 rounded-lg flex items-center justify-center shadow-lg">
-            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
+          <div class="w-12 h-12 xash-gradient rounded-xl flex items-center justify-center shadow-lg">
+            <i class="fas fa-comments-dollar text-white text-xl"></i>
           </div>
         </div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ErrandRunner</h1>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">XASH</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Mobile Payments via WhatsApp</p>
       </div>
 
       <!-- Slot for page content -->
