@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Webhooks;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessWhatsAppMessage;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
 {

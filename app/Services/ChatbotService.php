@@ -682,7 +682,7 @@ class ChatbotService
                 );
 
             if (!$response->successful()) {
-                Log::warning('ChatbotService: send failed', [
+                Log::error('ChatbotService: send failed', [
                     'phone'  => $phone,
                     'status' => $response->status(),
                     'body'   => $response->body(),
