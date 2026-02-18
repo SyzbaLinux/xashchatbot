@@ -47,21 +47,15 @@ class ProcessWhatsAppMessage implements ShouldQueue
                     'status'            => 'read',
                     'message_id'        => $this->messageId,
                 ]);
-        } catch (\Throwable $e) {
-            Log::warning('ProcessWhatsAppMessage: mark-as-read failed', [
-                'message_id' => $this->messageId,
-                'error'      => $e->getMessage(),
-            ]);
+        } catch (\Throwable) {
+            // mark-as-read is best-effort; silently ignore failures
         }
     }
 
     private function processOtp(string $otpCode): void
     {
         try {
-            $otp = Otp::verify($this->phoneNumber, $otpCode, 'login');
-            if ($otp) {
-                Log::info('OTP verified via WhatsApp', ['phone' => $this->phoneNumber]);
-            }
+            Otp::verify($this->phoneNumber, $otpCode, 'login');
         } catch (\Throwable $e) {
             Log::error('ProcessWhatsAppMessage: OTP verify failed', ['error' => $e->getMessage()]);
         }

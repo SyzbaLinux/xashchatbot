@@ -48,12 +48,6 @@ class WhatsAppWebhookController extends Controller
             $messageId = $message['id'];
             $type      = $message['type'];
 
-            Log::info('WhatsApp message received', [
-                'phone_number' => $phone,
-                'message_id'   => $messageId,
-                'type'         => $type,
-            ]);
-
             // Extract the user input depending on message type
             $input = match ($type) {
                 'text'        => $message['text']['body'] ?? null,
