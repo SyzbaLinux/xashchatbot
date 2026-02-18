@@ -17,11 +17,12 @@ class TransactionController extends Controller
                 'phone_number'   => $t->phone_number,
                 'type'           => ucfirst($t->type),
                 'recipient'      => $t->recipient,
-                'amount'         => $t->amount,
+                'amount'         => (float) $t->amount,
                 'currency'       => $t->currency,
                 'payment_method' => $t->payment_method,
                 'voucher_code'   => $t->voucher_code,
                 'status'         => $t->status,
+                'response_data'  => $t->response_data,
                 'created_at'     => $t->created_at->format('M d, Y H:i'),
             ]);
 
@@ -29,7 +30,7 @@ class TransactionController extends Controller
             'total'      => Transaction::count(),
             'successful' => Transaction::where('status', 'success')->count(),
             'failed'     => Transaction::where('status', 'failed')->count(),
-            'volume'     => Transaction::where('status', 'success')->sum('amount'),
+            'volume'     => (float) Transaction::where('status', 'success')->sum('amount'),
         ];
 
         return Inertia::render('Admin/Transactions', compact('transactions', 'stats'));

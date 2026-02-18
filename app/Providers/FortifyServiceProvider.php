@@ -45,7 +45,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         Fortify::registerView(function () {
-            return Inertia::render('Auth/Register');
+            return Inertia::render('Auth/Login');
         });
 
         Fortify::requestPasswordResetLinkView(function () {

@@ -19,10 +19,10 @@
       <div class="h-16 flex items-center justify-between px-5 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
         <Link :href="route('welcome')" class="flex items-center gap-2.5 group">
           <div class="w-8 h-8 xash-gradient rounded-lg flex items-center justify-center shadow-md">
-            <i class="fas fa-shield-alt text-white text-sm"></i>
+            <i class="fas fa-comments-dollar text-white text-sm"></i>
           </div>
           <div class="leading-tight">
-            <span class="text-lg font-bold text-gray-900 dark:text-white tracking-tight">XASH</span>
+            <span class="text-lg font-bold text-gray-900 dark:text-white tracking-tight">XASHCHATBOT</span>
             <span class="ml-1.5 text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded">Admin</span>
           </div>
         </Link>
@@ -75,6 +75,14 @@
             class="text-sm"
           >
             Chat Sessions
+          </NavLink>
+          <NavLink
+            :href="route('admin.voucher-providers')"
+            :active="route().current('admin.voucher-providers')"
+            icon="fa-ticket-alt"
+            class="text-sm"
+          >
+            Voucher Providers
           </NavLink>
         </div>
 

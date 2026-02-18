@@ -1,32 +1,6 @@
 <template>
   <GuestLayout>
-    <AuthCard title="Sign In" subtitle="Enter your credentials">
-      <!-- Auth Method Tabs -->
-      <div class="flex gap-2 mb-6 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg">
-        <button
-          @click="authMethod = 'password'"
-          :class="{
-            'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm': authMethod === 'password',
-            'text-slate-600 dark:text-slate-400': authMethod !== 'password',
-          }"
-          class="flex-1 py-2 px-4 rounded-md font-medium transition-colors"
-        >
-          <i class="fas fa-lock mr-2"></i>
-          Password
-        </button>
-        <button
-          @click="authMethod = 'otp'"
-          :class="{
-            'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm': authMethod === 'otp',
-            'text-slate-600 dark:text-slate-400': authMethod !== 'otp',
-          }"
-          class="flex-1 py-2 px-4 rounded-md font-medium transition-colors"
-        >
-          <i class="fas fa-message mr-2"></i>
-          OTP
-        </button>
-      </div>
-
+    <AuthCard title="Sign In" subtitle="Enter your credentials"> 
       <!-- Password Method -->
       <form v-if="authMethod === 'password'" @submit.prevent="submitLogin" class="space-y-4">
         <!-- Email field -->
@@ -102,29 +76,7 @@
           loadingText="Sending..."
           icon="fa-whatsapp"
         />
-      </form>
-
-      <!-- Links -->
-      <div class="mt-5 space-y-2 text-center text-sm text-gray-600 dark:text-gray-400">
-        <div v-if="canResetPassword && authMethod === 'password'">
-          <Link
-            :href="route('password.request')"
-            class="block font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-          >
-            Forgot password?
-          </Link>
-        </div>
-
-        <div>
-          No account?
-          <Link
-            :href="route('register')"
-            class="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-          >
-            Sign up
-          </Link>
-        </div>
-      </div>
+      </form> 
     </AuthCard>
   </GuestLayout>
 </template>

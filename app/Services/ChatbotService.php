@@ -5,12 +5,16 @@ namespace App\Services;
 use App\Models\ChatSession;
 use App\Models\PaymentMethod;
 use App\Models\Transaction;
+use App\Models\VoucherProvider;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class ChatbotService
 {
     private const MENU_IMAGE_URL = 'https://xashchatbot.emmanuelsiziba.co.zw/xashwelcome.jpg';
+
+    // Methods that require a mobile phone number + PIN flow
+    private const MOBILE_MONEY_METHODS = ['ecocash', 'onemoney', 'innbucks', 'mpesa', 'orangemoney'];
 
     public function __construct(private VoucherService $voucherService) {}
 
@@ -44,13 +48,31 @@ class ChatbotService
     private function route(ChatSession $session, string $input): ?string
     {
         return match ($session->step) {
-            'idle', 'main_menu'      => $this->showMainMenu($session, $input),
-            'airtime_recipient'      => $this->collectRecipient($session, $input),
-            'airtime_payment'        => $this->collectPaymentMethod($session, $input),
-            'airtime_voucher'        => $this->redeemVoucher($session, $input),
-            'airtime_amount'         => $this->collectAmount($session, $input),
-            'airtime_express_confirm'=> $this->confirmExpress($session, $input),
-            default                  => $this->showMainMenu($session, $input),
+            'idle', 'main_menu'          => $this->showMainMenu($session, $input),
+
+            // Airtime steps
+            'airtime_recipient'          => $this->collectRecipient($session, $input, 'airtime'),
+            'airtime_payment_type'       => $this->collectPaymentType($session, $input, 'airtime'),
+            'airtime_voucher_provider'   => $this->collectVoucherProvider($session, $input, 'airtime'),
+            'airtime_express_method'     => $this->collectExpressMethod($session, $input, 'airtime'),
+            'airtime_mobile_phone'       => $this->collectMobilePhone($session, $input, 'airtime'),
+            'airtime_currency'           => $this->collectCurrency($session, $input, 'airtime'),
+            'airtime_voucher'            => $this->redeemVoucher($session, $input),
+            'airtime_amount'             => $this->collectAmount($session, $input),
+            'airtime_express_confirm'    => $this->confirmExpress($session, $input),
+
+            // Data bundle steps
+            'bundles_recipient'          => $this->collectRecipient($session, $input, 'bundles'),
+            'bundles_payment_type'       => $this->collectPaymentType($session, $input, 'bundles'),
+            'bundles_voucher_provider'   => $this->collectVoucherProvider($session, $input, 'bundles'),
+            'bundles_express_method'     => $this->collectExpressMethod($session, $input, 'bundles'),
+            'bundles_mobile_phone'       => $this->collectMobilePhone($session, $input, 'bundles'),
+            'bundles_currency'           => $this->collectCurrency($session, $input, 'bundles'),
+            'bundles_voucher'            => $this->redeemVoucher($session, $input),
+            'bundles_amount'             => $this->collectAmount($session, $input),
+            'bundles_express_confirm'    => $this->confirmExpress($session, $input),
+
+            default                      => $this->showMainMenu($session, $input),
         };
     }
 
@@ -62,17 +84,12 @@ class ChatbotService
     {
         if ($session->step === 'main_menu') {
             if ($input === '1') {
-                $session->advance('airtime_recipient');
+                $session->advance('airtime_recipient', ['service' => 'airtime']);
                 return "Please enter the recipient's phone number (e.g. +263771234567), or type *cancel* to go back:";
             }
             if ($input === '2') {
-                $session->reset();
-                $this->sendInteractiveButtons(
-                    $session->phone_number,
-                    "Data bundle purchases are coming soon. Stay tuned! 📶",
-                    [['id' => 'home', 'title' => '🏠 Main Menu']]
-                );
-                return null;
+                $session->advance('bundles_recipient', ['service' => 'bundles']);
+                return "Please enter the recipient's phone number (e.g. +263771234567), or type *cancel* to go back:";
             }
             if ($input === '3') {
                 $session->reset();
@@ -82,9 +99,6 @@ class ChatbotService
                     [['id' => 'home', 'title' => '🏠 Main Menu']]
                 );
                 return null;
-            }
-            if ($input === 'home') {
-                // interactive button reply for Home
             }
         }
 
@@ -108,7 +122,7 @@ class ChatbotService
     // Step 1: Collect recipient number
     // -------------------------------------------------------------------------
 
-    private function collectRecipient(ChatSession $session, string $input): ?string
+    private function collectRecipient(ChatSession $session, string $input, string $service): ?string
     {
         if (strtolower($input) === 'cancel') {
             $session->reset();
@@ -119,46 +133,48 @@ class ChatbotService
             return "❌ That doesn't look like a valid phone number.\n\nPlease enter the recipient's number (e.g. *+263771234567*), or type *cancel*:";
         }
 
-        $session->advance('airtime_payment', ['recipient' => $input]);
+        $session->advance("{$service}_payment_type", ['recipient' => $input]);
+        $this->sendPaymentTypeButtons($session->phone_number);
 
-        // Show payment method selection immediately after collecting the number
-        $this->sendPaymentButtons($session->phone_number);
-
-        return null; // buttons already sent
+        return null;
     }
 
     // -------------------------------------------------------------------------
-    // Payment buttons helper — send interactive buttons for enabled methods
+    // Payment type buttons: Vouchers / Express
     // -------------------------------------------------------------------------
 
-    private function sendPaymentButtons(string $phone): void
+    private function sendPaymentTypeButtons(string $phone): void
     {
-        // WhatsApp interactive messages allow max 3 buttons; reserve one for Cancel
-        $methods = PaymentMethod::enabled()->take(2)->get();
+        // Build dynamic hints from DB so they always reflect what's actually available
+        $voucherHint = VoucherProvider::enabled()
+            ->orderBy('sort_order')
+            ->limit(3)
+            ->pluck('name')
+            ->join(', ');
 
-        if ($methods->isEmpty()) {
-            $this->sendText($phone, "⚠️ No payment methods are currently available. Please contact support.");
-            return;
-        }
+        $expressHint = PaymentMethod::enabled()
+            ->where('code', '!=', 'voucher')
+            ->orderBy('sort_order')
+            ->limit(3)
+            ->pluck('name')
+            ->join(', ');
 
-        $buttons = $methods->map(fn($m) => [
-            'id'    => $m->code,                      // e.g. "voucher", "express"
-            'title' => mb_substr($m->name, 0, 20),    // WhatsApp button title max 20 chars
-        ])->toArray();
+        $body = "💳 *How would you like to pay?*\n\n"
+            . "🎟 *Vouchers* — {$voucherHint}\n"
+            . "⚡ *Express* — {$expressHint}";
 
-        $buttons[] = ['id' => 'cancel_payment', 'title' => 'Cancel'];
-
-        $bodyText = "Great! 👍 How would you like to pay?\n\n"
-            . "_All purchases are final and non-refundable._";
-
-        $this->sendInteractiveButtons($phone, $bodyText, $buttons);
+        $this->sendInteractiveButtons($phone, $body, [
+            ['id' => 'pay_voucher',    'title' => 'Vouchers'],
+            ['id' => 'pay_express',    'title' => 'Express'],
+            ['id' => 'cancel_payment', 'title' => 'Cancel'],
+        ]);
     }
 
     // -------------------------------------------------------------------------
-    // Step 2: Handle payment method button reply
+    // Step 2: Handle Vouchers / Express selection
     // -------------------------------------------------------------------------
 
-    private function collectPaymentMethod(ChatSession $session, string $input): ?string
+    private function collectPaymentType(ChatSession $session, string $input, string $service): ?string
     {
         $input = strtolower(trim($input));
 
@@ -167,28 +183,233 @@ class ChatbotService
             return $this->showMainMenu($session, '');
         }
 
-        // Find the chosen payment method
-        $method = PaymentMethod::where('code', $input)->where('is_enabled', true)->first();
+        if ($input === 'pay_voucher') {
+            $providers = VoucherProvider::enabled()->get();
 
-        if (!$method) {
-            // Graceful fallback: re-send the buttons
-            $this->sendPaymentButtons($session->phone_number);
+            if ($providers->isEmpty()) {
+                $session->reset();
+                return "⚠️ No voucher providers are currently available. Please contact support.";
+            }
+
+            $session->advance("{$service}_voucher_provider");
+
+            $rows = $providers->map(fn($p) => [
+                'id'    => 'vp_' . $p->code,
+                'title' => $p->name,
+            ])->toArray();
+
+            $this->sendInteractiveList(
+                $session->phone_number,
+                "Select your voucher provider:",
+                "Choose Provider",
+                "Voucher Providers",
+                $rows
+            );
             return null;
         }
 
-        if ($method->code === 'voucher') {
-            $session->advance('airtime_voucher', ['payment_method' => 'voucher']);
-            return "Please enter your voucher code:";
+        if ($input === 'pay_express') {
+            $methods = PaymentMethod::enabled()->where('code', '!=', 'voucher')->get();
+
+            if ($methods->isEmpty()) {
+                $session->reset();
+                return "⚠️ No express payment methods are currently available. Please contact support.";
+            }
+
+            $session->advance("{$service}_express_method");
+
+            $rows = $methods->map(fn($m) => [
+                'id'    => 'em_' . $m->code,
+                'title' => $m->name,
+            ])->toArray();
+
+            $this->sendInteractiveList(
+                $session->phone_number,
+                "Select your payment method:",
+                "Choose Method",
+                "Payment Methods",
+                $rows
+            );
+            return null;
         }
 
-        // For express / EFT / mobile money — collect amount first
-        $session->advance('airtime_amount', ['payment_method' => $method->code, 'payment_method_name' => $method->name]);
-        $recipient = $session->session_data['recipient'] ?? 'unknown';
-        return "Enter the airtime amount you'd like to send to {$recipient} (e.g. 100):";
+        // Unrecognised input — re-send buttons
+        $this->sendPaymentTypeButtons($session->phone_number);
+        return null;
     }
 
     // -------------------------------------------------------------------------
-    // Step 3a: Redeem voucher code (voucher determines amount)
+    // Step 3a: Voucher provider selection
+    // -------------------------------------------------------------------------
+
+    private function collectVoucherProvider(ChatSession $session, string $input, string $service): ?string
+    {
+        if (strtolower($input) === 'cancel') {
+            $session->reset();
+            return $this->showMainMenu($session, '');
+        }
+
+        // Strip the "vp_" prefix added to list row IDs
+        $code     = str_starts_with($input, 'vp_') ? substr($input, 3) : $input;
+        $provider = VoucherProvider::where('code', $code)->where('is_enabled', true)->first();
+
+        if (!$provider) {
+            $providers = VoucherProvider::enabled()->get();
+            $rows = $providers->map(fn($p) => [
+                'id'    => 'vp_' . $p->code,
+                'title' => $p->name,
+            ])->toArray();
+            $this->sendInteractiveList(
+                $session->phone_number,
+                "Please select a valid voucher provider:",
+                "Choose Provider",
+                "Voucher Providers",
+                $rows
+            );
+            return null;
+        }
+
+        $session->advance("{$service}_voucher", [
+            'payment_method'        => 'voucher',
+            'voucher_provider'      => $provider->code,
+            'voucher_provider_name' => $provider->name,
+        ]);
+
+        return "Please enter your *{$provider->name}* voucher code:";
+    }
+
+    // -------------------------------------------------------------------------
+    // Step 3b: Express method selection
+    // -------------------------------------------------------------------------
+
+    private function collectExpressMethod(ChatSession $session, string $input, string $service): ?string
+    {
+        if (strtolower($input) === 'cancel') {
+            $session->reset();
+            return $this->showMainMenu($session, '');
+        }
+
+        // Strip the "em_" prefix added to list row IDs
+        $code   = str_starts_with($input, 'em_') ? substr($input, 3) : $input;
+        $method = PaymentMethod::where('code', $code)
+            ->where('is_enabled', true)
+            ->where('code', '!=', 'voucher')
+            ->first();
+
+        if (!$method) {
+            $methods = PaymentMethod::enabled()->where('code', '!=', 'voucher')->get();
+            $rows = $methods->map(fn($m) => [
+                'id'    => 'em_' . $m->code,
+                'title' => $m->name,
+            ])->toArray();
+            $this->sendInteractiveList(
+                $session->phone_number,
+                "Please select a valid payment method:",
+                "Choose Method",
+                "Payment Methods",
+                $rows
+            );
+            return null;
+        }
+
+        $data      = $session->session_data ?? [];
+        $recipient = $data['recipient'] ?? 'unknown';
+
+        // Mobile money (EcoCash, OneMoney, etc.) → collect payer's phone number first
+        if (in_array($method->code, self::MOBILE_MONEY_METHODS)) {
+            $session->advance("{$service}_mobile_phone", [
+                'payment_method'      => $method->code,
+                'payment_method_name' => $method->name,
+            ]);
+            return "📱 Enter your *{$method->name}* mobile number (e.g. +263771234567), or type *cancel*:";
+        }
+
+        // Card / EFT → select currency first
+        $session->advance("{$service}_currency", [
+            'payment_method'      => $method->code,
+            'payment_method_name' => $method->name,
+        ]);
+        $this->sendCurrencyButtons($session->phone_number);
+        return null;
+    }
+
+    // -------------------------------------------------------------------------
+    // Step 3c: Collect mobile money phone number
+    // -------------------------------------------------------------------------
+
+    private function collectMobilePhone(ChatSession $session, string $input, string $service): ?string
+    {
+        if (strtolower($input) === 'cancel') {
+            $session->reset();
+            return $this->showMainMenu($session, '');
+        }
+
+        if (!preg_match('/^\+?\d{7,15}$/', $input)) {
+            return "❌ That doesn't look like a valid mobile number.\n\nPlease enter your number (e.g. *+263771234567*), or type *cancel*:";
+        }
+
+        $data      = $session->session_data ?? [];
+        $recipient = $data['recipient'] ?? 'unknown';
+
+        $session->advance("{$service}_currency", ['mobile_phone' => $input]);
+        $this->sendCurrencyButtons($session->phone_number);
+        return null;
+    }
+
+    // -------------------------------------------------------------------------
+    // Currency buttons helper
+    // -------------------------------------------------------------------------
+
+    private function sendCurrencyButtons(string $phone): void
+    {
+        $this->sendInteractiveButtons($phone,
+            "💱 *Select currency for this transaction:*",
+            [
+                ['id' => 'cur_USD', 'title' => '🇺🇸 USD – US Dollar'],
+                ['id' => 'cur_ZAR', 'title' => '🇿🇦 ZAR – S.A. Rand'],
+                ['id' => 'cur_BWP', 'title' => '🇧🇼 BWP – Botswana Pula'],
+            ]
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Step 3d: Collect currency
+    // -------------------------------------------------------------------------
+
+    private function collectCurrency(ChatSession $session, string $input, string $service): ?string
+    {
+        if (strtolower($input) === 'cancel') {
+            $session->reset();
+            return $this->showMainMenu($session, '');
+        }
+
+        $map = [
+            'cur_usd' => ['code' => 'USD', 'symbol' => '$',   'name' => 'US Dollar'],
+            'cur_zar' => ['code' => 'ZAR', 'symbol' => 'R',   'name' => 'S.A. Rand'],
+            'cur_bwp' => ['code' => 'BWP', 'symbol' => 'P',   'name' => 'Botswana Pula'],
+        ];
+
+        $chosen = $map[strtolower(trim($input))] ?? null;
+
+        if (!$chosen) {
+            $this->sendCurrencyButtons($session->phone_number);
+            return null;
+        }
+
+        $data      = $session->session_data ?? [];
+        $recipient = $data['recipient'] ?? 'unknown';
+
+        $session->advance("{$service}_amount", [
+            'currency'        => $chosen['code'],
+            'currency_symbol' => $chosen['symbol'],
+            'currency_name'   => $chosen['name'],
+        ]);
+
+        return "Enter the amount in *{$chosen['code']}* to send to *{$recipient}* (e.g. 100), or type *cancel*:";
+    }
+
+    // -------------------------------------------------------------------------
+    // Step 4a: Redeem voucher code
     // -------------------------------------------------------------------------
 
     private function redeemVoucher(ChatSession $session, string $input): ?string
@@ -200,6 +421,7 @@ class ChatbotService
 
         $data      = $session->session_data ?? [];
         $recipient = $data['recipient'] ?? '';
+        $service   = $data['service'] ?? 'airtime';
 
         $result = $this->voucherService->redeem($input, $recipient);
         $status = $result['success'] ? 'success' : 'failed';
@@ -207,14 +429,14 @@ class ChatbotService
 
         Transaction::create([
             'phone_number'   => $session->phone_number,
-            'type'           => 'airtime',
+            'type'           => $service,
             'recipient'      => $recipient,
             'amount'         => $amount,
             'currency'       => 'ZAR',
             'payment_method' => 'voucher',
             'voucher_code'   => strtoupper(trim($input)),
             'status'         => $status,
-            'response_data'  => $result,
+            'response_data'  => array_merge($result, ['provider' => $data['voucher_provider'] ?? null]),
         ]);
 
         if ($result['success']) {
@@ -227,12 +449,11 @@ class ChatbotService
             return null;
         }
 
-        // On failure keep in voucher step so user can retry
         return "❌ {$result['message']}\n\nPlease try a different code, or type *cancel* to go back.";
     }
 
     // -------------------------------------------------------------------------
-    // Step 3b: Collect amount (for express / non-voucher methods)
+    // Step 4b: Collect amount (for express methods)
     // -------------------------------------------------------------------------
 
     private function collectAmount(ChatSession $session, string $input): ?string
@@ -246,16 +467,22 @@ class ChatbotService
             return "Please enter a valid amount (numbers only, e.g. *200*), or type *cancel*:";
         }
 
-        $data          = $session->session_data ?? [];
-        $amount        = (float) $input;
-        $recipient     = $data['recipient'] ?? 'unknown';
-        $methodName    = $data['payment_method_name'] ?? 'Express';
+        $data           = $session->session_data ?? [];
+        $amount         = (float) $input;
+        $recipient      = $data['recipient']      ?? 'unknown';
+        $methodName     = $data['payment_method_name'] ?? 'Express';
+        $service        = $data['service']        ?? 'airtime';
+        $currency       = $data['currency']       ?? 'USD';
+        $currencySymbol = $data['currency_symbol'] ?? '$';
 
-        $session->advance('airtime_express_confirm', ['amount' => $amount]);
+        $session->advance("{$service}_express_confirm", ['amount' => $amount]);
+
+        $serviceLabel = $service === 'bundles' ? 'Data Bundle' : 'Airtime';
 
         $summary = "📋 *Order Summary*\n\n"
             . "📱 Recipient: *{$recipient}*\n"
-            . "💰 Amount: *ZAR {$amount}*\n"
+            . "💰 Amount: *{$currency} {$currencySymbol}{$amount}*\n"
+            . "📦 Type: *{$serviceLabel}*\n"
             . "💳 Payment: *{$methodName}*\n\n"
             . "_All purchases are final and non-refundable._\n\n"
             . "Confirm your payment?";
@@ -269,7 +496,7 @@ class ChatbotService
     }
 
     // -------------------------------------------------------------------------
-    // Step 4: Confirm express payment
+    // Step 5: Confirm express payment
     // -------------------------------------------------------------------------
 
     private function confirmExpress(ChatSession $session, string $input): ?string
@@ -282,21 +509,62 @@ class ChatbotService
         }
 
         if ($input === 'express_confirm' || $input === 'confirm') {
-            $data      = $session->session_data ?? [];
-            $recipient = $data['recipient'] ?? '';
-            $amount    = (float) ($data['amount'] ?? 0);
-            $method    = $data['payment_method'] ?? 'express';
+            $data           = $session->session_data ?? [];
+            $recipient      = $data['recipient']           ?? '';
+            $amount         = (float) ($data['amount']     ?? 0);
+            $method         = $data['payment_method']      ?? 'express';
+            $methodName     = $data['payment_method_name'] ?? 'Express';
+            $mobilePhone    = $data['mobile_phone']        ?? '';
+            $service        = $data['service']             ?? 'airtime';
+            $currency       = $data['currency']            ?? 'USD';
+            $currencySymbol = $data['currency_symbol']     ?? '$';
 
-            // Log the transaction as pending (real processing not yet implemented)
+            // Mobile money → send USSD push, PIN entered on handset (not in chat)
+            if (in_array($method, self::MOBILE_MONEY_METHODS)) {
+                $txId = 'SIM-' . strtoupper(substr(md5(uniqid()), 0, 8));
+
+                Transaction::create([
+                    'phone_number'   => $session->phone_number,
+                    'type'           => $service,
+                    'recipient'      => $recipient,
+                    'amount'         => $amount,
+                    'currency'       => $currency,
+                    'payment_method' => $method,
+                    'status'         => 'success',
+                    'response_data'  => [
+                        'note'         => 'Simulated mobile money payment',
+                        'mobile_phone' => $mobilePhone,
+                        'tx_id'        => $txId,
+                    ],
+                ]);
+
+                $session->reset();
+
+                $serviceLabel = $service === 'bundles' ? 'data bundle' : 'airtime';
+
+                $this->sendInteractiveButtons(
+                    $session->phone_number,
+                    "📲 *{$methodName} USSD Request Sent!*\n\n"
+                        . "A PIN prompt has been sent to *{$mobilePhone}*.\n"
+                        . "Please enter your PIN on your phone when the USSD popup appears.\n\n"
+                        . "✅ *{$currency} {$currencySymbol}{$amount}* {$serviceLabel} will be sent to *{$recipient}* once confirmed.\n\n"
+                        . "_Transaction ID: {$txId}_",
+                    [['id' => 'home', 'title' => '🏠 Main Menu']]
+                );
+
+                return null;
+            }
+
+            // Card / EFT → pending (awaiting real integration)
             Transaction::create([
                 'phone_number'   => $session->phone_number,
-                'type'           => 'airtime',
+                'type'           => $service,
                 'recipient'      => $recipient,
                 'amount'         => $amount,
-                'currency'       => 'ZAR',
+                'currency'       => $currency,
                 'payment_method' => $method,
                 'status'         => 'pending',
-                'response_data'  => ['note' => 'Express payment — awaiting integration'],
+                'response_data'  => ['note' => 'EFT/Card payment — awaiting integration'],
             ]);
 
             $session->reset();
@@ -304,22 +572,24 @@ class ChatbotService
             $this->sendInteractiveButtons(
                 $session->phone_number,
                 "⏳ Your order has been received!\n\n"
-                    . "ZAR {$amount} airtime for {$recipient} is being processed. "
+                    . "{$currency} {$currencySymbol}{$amount} for {$recipient} is being processed. "
                     . "You will receive a confirmation shortly.\n\n"
-                    . "_Express payment integration coming soon._",
+                    . "_Payment integration coming soon._",
                 [['id' => 'home', 'title' => '🏠 Main Menu']]
             );
 
             return null;
         }
 
-        // Unrecognised input — re-prompt with buttons
-        $data      = $session->session_data ?? [];
-        $amount    = $data['amount'] ?? 0;
-        $recipient = $data['recipient'] ?? 'unknown';
+        // Unrecognised input — re-prompt
+        $data           = $session->session_data ?? [];
+        $amount         = $data['amount']          ?? 0;
+        $recipient      = $data['recipient']        ?? 'unknown';
+        $currency       = $data['currency']         ?? 'USD';
+        $currencySymbol = $data['currency_symbol']  ?? '$';
 
         $this->sendInteractiveButtons($session->phone_number,
-            "Please confirm your payment of ZAR {$amount} to {$recipient}:",
+            "Please confirm your payment of {$currency} {$currencySymbol}{$amount} to {$recipient}:",
             [
                 ['id' => 'express_confirm', 'title' => '✅ Confirm & Pay'],
                 ['id' => 'express_cancel',  'title' => '❌ Cancel'],
@@ -364,9 +634,37 @@ class ChatbotService
                         'type'  => 'reply',
                         'reply' => [
                             'id'    => $btn['id'],
-                            'title' => mb_substr($btn['title'], 0, 20), // WhatsApp limit
+                            'title' => mb_substr($btn['title'], 0, 20),
                         ],
                     ], $buttons),
+                ],
+            ],
+        ]);
+    }
+
+    private function sendInteractiveList(
+        string $phone,
+        string $bodyText,
+        string $buttonLabel,
+        string $sectionTitle,
+        array  $rows
+    ): void {
+        $this->post($phone, [
+            'type' => 'interactive',
+            'interactive' => [
+                'type' => 'list',
+                'body' => ['text' => $bodyText],
+                'action' => [
+                    'button'   => mb_substr($buttonLabel, 0, 20),
+                    'sections' => [
+                        [
+                            'title' => mb_substr($sectionTitle, 0, 24),
+                            'rows'  => array_map(fn($row) => [
+                                'id'    => mb_substr((string) $row['id'], 0, 200),
+                                'title' => mb_substr((string) $row['title'], 0, 24),
+                            ], $rows),
+                        ],
+                    ],
                 ],
             ],
         ]);
@@ -376,8 +674,8 @@ class ChatbotService
     {
         try {
             $response = Http::withToken(config('whatsapp.graph_api_token'))
-                ->connectTimeout(5)   // fail fast if can't reach Facebook
-                ->timeout(10)         // max 10s to get a response
+                ->connectTimeout(5)
+                ->timeout(10)
                 ->post(
                     'https://graph.facebook.com/v24.0/' . config('whatsapp.phone_number_id') . '/messages',
                     array_merge(['messaging_product' => 'whatsapp', 'to' => $phone], $body)
